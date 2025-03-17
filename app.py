@@ -279,25 +279,32 @@ def get_courses():
                 'title': c.title,
                 'description': c.description,
                 'teacher_id': c.teacher_id,
-                'teacher_name': user.username  # Include teacher's own name
+                'teacher_name': user.username
             } for c in courses])
         else:
             # Students see all courses
-            courses = Course.query.all()
+            # Introduce SQL Injection Vulnerability
+            search_term = request.args.get('search', '')  # User-controlled input
+            conn = sqlite3.connect('learning.db')
+            conn.row_factory = sqlite3.Row
+            # Vulnerable: Direct string concatenation
+            query = f"SELECT * FROM course WHERE title LIKE '%{search_term}%'"
+            courses = conn.execute(query).fetchall()
+            conn.close()
+
             enrollments = Enrollment.query.filter_by(student_id=user.id).all()
             enrolled_course_ids = [e.course_id for e in enrollments]
 
-            # Get all teachers at once to avoid N+1 query problem
             teachers = {u.id: u.username for u in User.query.filter_by(
                 role='teacher').all()}
 
             return jsonify([{
-                'id': c.id,
-                'title': c.title,
-                'description': c.description,
-                'teacher_id': c.teacher_id,
-                'teacher_name': teachers.get(c.teacher_id, 'Unknown Teacher'),
-                'enrolled': c.id in enrolled_course_ids
+                'id': c['id'],
+                'title': c['title'],
+                'description': c['description'],
+                'teacher_id': c['teacher_id'],
+                'teacher_name': teachers.get(c['teacher_id'], 'Unknown Teacher'),
+                'enrolled': c['id'] in enrolled_course_ids
             } for c in courses])
 
     except jwt.InvalidTokenError:
