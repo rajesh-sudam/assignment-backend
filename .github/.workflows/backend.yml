@@ -9,6 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
@@ -17,7 +19,12 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    - name: Run Tests
+        pip install pytest pytest-cov
+    - name: Run Tests with Coverage
       run: |
-        pip install pytest
-        pytest
+        pytest --cov=./ --cov-report=xml
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
