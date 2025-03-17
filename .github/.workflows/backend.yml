@@ -23,6 +23,12 @@ jobs:
     - name: Run Tests with Coverage
       run: |
         pytest --cov=./ --cov-report=xml
+    - name: Run Snyk to Check for Vulnerabilities
+      uses: snyk/actions/python@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
     - name: SonarCloud Scan
       uses: SonarSource/sonarcloud-github-action@master
       env:
